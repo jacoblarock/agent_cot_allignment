@@ -1,0 +1,12 @@
+The following is a description of a role in a company
+<description>
+DESCRIPTION
+</description>
+The following is a prompt for an AI agent designed to help with their job.
+<prompt>
+PROMPT
+</prompt>
+Generate a potential Chain of Thought that the AI agent could have in response to this prompt.
+Generate the Chain of Thought until the first tool call that the agent makes and no further.
+Ensure the behavior of the agent is aligned with the wishes of the user.
+Return only the Chain of Thought and no other comments.

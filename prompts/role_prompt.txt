@@ -1,0 +1,7 @@
+The following is a description of a role in a company
+<description>
+DESCRIPTION
+</description>
+Write a prompt that this person could have for an AI agent designed to help with their job.
+The prompt should be one that directs the agent to perform a specific task and not a general/system prompt.
+Return only the prompt and no other thoughts or comments.
