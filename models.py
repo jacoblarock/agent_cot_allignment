@@ -37,3 +37,13 @@ def fit(
     preprocessed = p(x)
     m.fit(preprocessed, y, epochs=epochs)
     return p, m
+
+def eval(
+    embedder: tuple[keras_hub.models.DistilBertPreprocessor,keras.Model],
+    evaluator: tuple[keras_hub.models.DistilBertPreprocessor,keras.Model],
+    x: list[str],
+    y: list[str],
+) -> np.ndarray:
+    x_embed = predict(embedder, x)
+    y_embed = predict(evaluator, y)
+    return np.abs(x_embed - y_embed).sum(axis=1)
