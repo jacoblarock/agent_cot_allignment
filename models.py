@@ -16,7 +16,7 @@ def create_model() -> tuple[keras_hub.models.DistilBertPreprocessor,keras.Model]
     )
     model.compile(
         optimizer=keras.optimizers.Adam(),
-        loss=keras.losses.MeanAbsoluteError()
+        loss=keras.losses.MeanSquaredError()
     )
     return preprocessor, model
 
@@ -25,7 +25,7 @@ def predict(
     x: list[str],
 ) -> np.ndarray:
     p, m = model
-    return m.predict(p(x))
+    return m.predict(p(x), batch_size=16)
 
 def fit(
     model: tuple[keras_hub.models.DistilBertPreprocessor,keras.Model],
@@ -35,7 +35,7 @@ def fit(
 ) -> tuple[keras_hub.models.DistilBertPreprocessor,keras.Model]:
     p, m = model
     preprocessed = p(x)
-    m.fit(preprocessed, y, epochs=epochs)
+    m.fit(preprocessed, y, epochs=epochs, batch_size=16)
     return p, m
 
 def eval(
@@ -46,4 +46,4 @@ def eval(
 ) -> np.ndarray:
     x_embed = predict(embedder, x)
     y_embed = predict(evaluator, y)
-    return np.abs(x_embed - y_embed).sum(axis=1)
+    return np.linalg.norm(x_embed - y_embed, axis=1)
