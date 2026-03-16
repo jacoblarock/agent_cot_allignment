@@ -9,15 +9,19 @@ def main():
         aligned = json.load(file)
     with open("data/misaligned.json") as file:
         misaligned = json.load(file)
+    print("prompts", len(prompts))
+    print("aligned", len(aligned))
+    print("misaligned", len(misaligned))
+    if len(prompts) != len(aligned) or len(aligned) != len(misaligned):
+        raise RuntimeError("Lengths do not match!")
     split_index = int(len(prompts) * train_split)
-    print(split_index)
     p_train = prompts[:split_index]
     p_test = prompts[split_index:]
     a_train = aligned[:split_index]
     a_test = aligned[split_index:]
     m_test = misaligned[split_index:]
-    print(len(a_train))
-    print(len(a_test))
+    print("train", len(a_train))
+    print("test", len(a_test))
     embedder = models.create_model()
     evaluator = models.create_model()
     y = models.predict(embedder, p_train)
