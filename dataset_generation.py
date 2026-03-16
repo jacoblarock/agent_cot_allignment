@@ -60,9 +60,24 @@ def main():
         print(role)
         for i in range(5):
             print("response", i)
-            prompts.append(generate_prompt(role))
-            aligned.append(cot_aligned(role, prompts[-1]))
-            misaligned.append(cot_misaligned(role, prompts[-1]))
+            try:
+                prompts.append(generate_prompt(role))
+            except:
+                print("error prompt")
+                continue
+            try:
+                aligned.append(cot_aligned(role, prompts[-1]))
+            except:
+                print("error aligned")
+                prompts.pop(-1)
+                continue
+            try:
+                misaligned.append(cot_misaligned(role, prompts[-1]))
+            except:
+                print("error misaligned")
+                prompts.pop(-1)
+                aligned.pop(-1)
+                continue
     with open("data/prompts.json", "w") as file:
         json.dump(prompts, file)
     with open("data/aligned.json", "w") as file:
