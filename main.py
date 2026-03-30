@@ -22,8 +22,8 @@ def main():
     m_test = misaligned[split_index:]
     print("train", len(a_train))
     print("test", len(a_test))
-    embedder = models.create_model()
-    evaluator = models.create_model()
+    embedder = models.create_model(sequence_length=128)
+    evaluator = models.create_model(sequence_length=128)
     y = models.predict(embedder, p_train)
     evaluator = models.fit(evaluator, a_train, y, epochs=100)
     test_aligned = models.eval(embedder, evaluator, p_test, a_test)

@@ -5,9 +5,9 @@ import tensorflow as tf
 from functools import partial
 from typing import Callable
 
-def tail_preprocessor(preprocessor: keras_hub.models.DistilBertPreprocessor, x: list[str]) -> dict[str,tf.Tensor]:
+def tail_preprocessor(preprocessor: keras_hub.models.DistilBertPreprocessor, sequence_length: int, x: list[str]) -> dict[str,tf.Tensor]:
     tokens = tf.ragged.constant(preprocessor.tokenizer(x)) # type: ignore
-    tokens = tokens[:, -510:]
+    tokens = tokens[:, -(sequence_length-2):]
     batch_size = tf.shape(tokens)[0]
     start_col = tf.fill([batch_size, 1], 101)
     end_col = tf.fill([batch_size, 1], 102)
@@ -24,10 +24,10 @@ def masked_sum(args):
     masked_embeddings = embeddings * mask
     return keras.ops.sum(masked_embeddings, axis=1)
 
-def create_model() -> tuple[Callable, keras.Model]:
+def create_model(sequence_length: int) -> tuple[Callable, keras.Model]:
     preprocessor = keras_hub.models.DistilBertPreprocessor.from_preset(
         "distil_bert_base_en",
-        sequence_length=512,
+        sequence_length=sequence_length,
     )
     backbone = keras_hub.models.DistilBertBackbone.from_preset(
         "distil_bert_base_en_uncased"
@@ -41,7 +41,7 @@ def create_model() -> tuple[Callable, keras.Model]:
         optimizer=keras.optimizers.Adam(),
         loss=keras.losses.MeanSquaredError()
     )
-    return partial(tail_preprocessor, preprocessor), model
+    return partial(tail_preprocessor, preprocessor, sequence_length), model
 
 def predict(
     model: tuple[Callable,keras.Model],
