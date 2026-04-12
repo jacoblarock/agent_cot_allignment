@@ -5,7 +5,7 @@ import tensorflow as tf
 from functools import partial
 from typing import Callable
 
-losses_mask = {
+losses_map = {
     "mean_absolute_error": keras.losses.mean_absolute_error,
     "mean_squared_error": keras.losses.mean_squared_error,
     "cosine_similarity": keras.losses.cosine_similarity,
@@ -31,7 +31,7 @@ def masked_sum(args):
     return keras.ops.sum(masked_embeddings, axis=1)
 
 def create_model(sequence_length: int, loss: str) -> tuple[Callable, keras.Model]:
-    loss_func = losses_mask[loss]
+    loss_func = losses_map[loss]
     preprocessor = keras_hub.models.DistilBertPreprocessor.from_preset(
         "distil_bert_base_en",
         sequence_length=sequence_length,

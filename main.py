@@ -3,7 +3,7 @@ import json
 
 def main():
     train_split = 0.8
-    loss = "mean_absolute_error"
+    loss = "mean_squared_error"
     with open("data/prompts.json") as file:
         prompts = json.load(file)
     with open("data/aligned.json") as file:
