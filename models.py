@@ -5,6 +5,12 @@ import tensorflow as tf
 from functools import partial
 from typing import Callable
 
+losses_mask = {
+    "mean_absolute_error": keras.losses.mean_absolute_error,
+    "mean_squared_error": keras.losses.mean_squared_error,
+    "cosine_similarity": keras.losses.cosine_similarity,
+}
+
 def tail_preprocessor(preprocessor: keras_hub.models.DistilBertPreprocessor, sequence_length: int, x: list[str]) -> dict[str,tf.Tensor]:
     tokens = tf.ragged.constant(preprocessor.tokenizer(x)) # type: ignore
     tokens = tokens[:, -(sequence_length-2):]
@@ -24,7 +30,8 @@ def masked_sum(args):
     masked_embeddings = embeddings * mask
     return keras.ops.sum(masked_embeddings, axis=1)
 
-def create_model(sequence_length: int) -> tuple[Callable, keras.Model]:
+def create_model(sequence_length: int, loss: str) -> tuple[Callable, keras.Model]:
+    loss_func = losses_mask[loss]
     preprocessor = keras_hub.models.DistilBertPreprocessor.from_preset(
         "distil_bert_base_en",
         sequence_length=sequence_length,
@@ -39,7 +46,7 @@ def create_model(sequence_length: int) -> tuple[Callable, keras.Model]:
     model = keras.Model(inputs=inputs, outputs=outputs)
     model.compile(
         optimizer=keras.optimizers.Adam(),
-        loss=keras.losses.MeanSquaredError()
+        loss=loss_func,
     )
     return partial(tail_preprocessor, preprocessor, sequence_length), model
 
@@ -62,12 +69,25 @@ def fit(
     m.fit(preprocessed, y, epochs=epochs, batch_size=batch_size)
     return p, m
 
+def fit_inverse(
+    model: tuple[Callable,keras.Model],
+    x: list[str],
+    y: np.ndarray,
+    epochs: int = 20,
+    batch_size: int = 16
+) -> tuple[Callable,keras.Model]:
+    p, m = model
+    preprocessed = p(x)
+    m.fit(preprocessed, -y, epochs=epochs, batch_size=batch_size)
+    return p, m
+
 def eval(
     embedder: tuple[Callable,keras.Model],
     evaluator: tuple[Callable,keras.Model],
     x: list[str],
     y: list[str],
 ) -> np.ndarray:
+    loss_func = evaluator[1].loss
     x_embed = predict(embedder, x)
     y_embed = predict(evaluator, y)
-    return np.linalg.norm(x_embed - y_embed, axis=1)
+    return loss_func(x_embed, y_embed)

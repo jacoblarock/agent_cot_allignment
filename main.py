@@ -3,6 +3,7 @@ import json
 
 def main():
     train_split = 0.8
+    loss = "mean_absolute_error"
     with open("data/prompts.json") as file:
         prompts = json.load(file)
     with open("data/aligned.json") as file:
@@ -18,14 +19,22 @@ def main():
     p_train = prompts[:split_index]
     p_test = prompts[split_index:]
     a_train = aligned[:split_index]
+    m_train = misaligned[:split_index]
     a_test = aligned[split_index:]
     m_test = misaligned[split_index:]
     print("train", len(a_train))
     print("test", len(a_test))
-    embedder = models.create_model(sequence_length=128)
-    evaluator = models.create_model(sequence_length=128)
+    embedder = models.create_model(sequence_length=128, loss=loss)
+    evaluator = models.create_model(sequence_length=128, loss=loss)
     y = models.predict(embedder, p_train)
-    evaluator = models.fit(evaluator, a_train, y, epochs=100)
+    pre_training_compare = models.eval(evaluator, evaluator, a_test, m_test)
+    print("pretraining comparison")
+    print(pre_training_compare)
+    evaluator = models.fit(evaluator, a_train, y, epochs=10)
+    evaluator = models.fit_inverse(evaluator, m_train, y, epochs=1)
+    post_training_compare = models.eval(evaluator, evaluator, a_test, m_test)
+    print("posttraining comparison")
+    print(post_training_compare)
     test_aligned = models.eval(embedder, evaluator, p_test, a_test)
     print(test_aligned)
     test_misaligned = models.eval(embedder, evaluator, p_test, m_test)
