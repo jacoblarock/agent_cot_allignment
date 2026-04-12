@@ -4,6 +4,7 @@ import numpy as np
 import tensorflow as tf
 from functools import partial
 from typing import Callable
+from scipy.spatial.distance import cdist
 
 losses_map = {
     "mean_absolute_error": keras.losses.mean_absolute_error,
@@ -55,14 +56,14 @@ def predict(
     x: list[str],
 ) -> np.ndarray:
     p, m = model
-    return m.predict(p(x), batch_size=16)
+    return m.predict(p(x), batch_size=32)
 
 def fit(
     model: tuple[Callable,keras.Model],
     x: list[str],
     y: np.ndarray,
     epochs: int = 20,
-    batch_size: int = 16
+    batch_size: int = 32
 ) -> tuple[Callable,keras.Model]:
     p, m = model
     preprocessed = p(x)
@@ -74,7 +75,7 @@ def fit_inverse(
     x: list[str],
     y: np.ndarray,
     epochs: int = 20,
-    batch_size: int = 16
+    batch_size: int = 32
 ) -> tuple[Callable,keras.Model]:
     p, m = model
     preprocessed = p(x)
@@ -91,3 +92,10 @@ def eval(
     x_embed = predict(embedder, x)
     y_embed = predict(evaluator, y)
     return loss_func(x_embed, y_embed)
+
+def get_variances(
+    model: tuple[Callable,keras.Model],
+    x: list[str],
+) -> np.ndarray:
+    x_embed = predict(model, x)
+    return cdist(x_embed, x_embed, metric="euclidean")

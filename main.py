@@ -3,7 +3,7 @@ import json
 
 def main():
     train_split = 0.8
-    loss = "mean_squared_error"
+    loss = "mean_absolute_error"
     with open("data/prompts.json") as file:
         prompts = json.load(file)
     with open("data/aligned.json") as file:
@@ -27,14 +27,16 @@ def main():
     embedder = models.create_model(sequence_length=128, loss=loss)
     evaluator = models.create_model(sequence_length=128, loss=loss)
     y = models.predict(embedder, p_train)
-    pre_training_compare = models.eval(evaluator, evaluator, a_test, m_test)
     print("pretraining comparison")
+    pre_training_compare = models.get_variances(evaluator, a_test)
     print(pre_training_compare)
+    print("mean:", pre_training_compare.mean())
+    evaluator = models.fit_inverse(evaluator, m_train, y, epochs=5)
     evaluator = models.fit(evaluator, a_train, y, epochs=10)
-    evaluator = models.fit_inverse(evaluator, m_train, y, epochs=1)
-    post_training_compare = models.eval(evaluator, evaluator, a_test, m_test)
     print("posttraining comparison")
+    post_training_compare = models.get_variances(evaluator, a_test)
     print(post_training_compare)
+    print("mean:", post_training_compare.mean())
     test_aligned = models.eval(embedder, evaluator, p_test, a_test)
     print(test_aligned)
     test_misaligned = models.eval(embedder, evaluator, p_test, m_test)
