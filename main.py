@@ -3,7 +3,6 @@ import json
 
 def main():
     train_split = 0.8
-    loss = "mean_absolute_error"
     with open("data/prompts.json") as file:
         prompts = json.load(file)
     with open("data/aligned.json") as file:
@@ -24,23 +23,44 @@ def main():
     m_test = misaligned[split_index:]
     print("train", len(a_train))
     print("test", len(a_test))
-    embedder = models.create_model(sequence_length=128, loss=loss)
-    evaluator = models.create_model(sequence_length=128, loss=loss)
-    y = models.predict(embedder, p_train)
-    print("pretraining comparison")
-    pre_training_compare = models.get_variances(evaluator, a_test)
-    print(pre_training_compare)
-    print("mean:", pre_training_compare.mean())
-    evaluator = models.fit_inverse(evaluator, m_train, y, epochs=5)
-    evaluator = models.fit(evaluator, a_train, y, epochs=10)
-    print("posttraining comparison")
-    post_training_compare = models.get_variances(evaluator, a_test)
-    print(post_training_compare)
-    print("mean:", post_training_compare.mean())
-    test_aligned = models.eval(embedder, evaluator, p_test, a_test)
-    print(test_aligned)
-    test_misaligned = models.eval(embedder, evaluator, p_test, m_test)
-    print(test_misaligned)
+
+    embedder = models.create_model(sequence_length=128, loss="cosine_similarity")
+    evaluator = models.create_model(sequence_length=128, loss="cosine_similarity")
+
+    print("pretraining aligned similarity")
+    pre_align = models.eval(embedder, evaluator, p_test, a_test)
+    print("mean:", pre_align.mean())
+    print("pretraining misaligned similarity")
+    pre_misalign = models.eval(embedder, evaluator, p_test, m_test)
+    print("mean:", pre_misalign.mean())
+
+    print("\npretraining evaluator embedding variance (test set)")
+    pre_var = models.get_variances(evaluator, a_test)
+    print("mean pairwise distance:", pre_var.mean())
+
+    print("\npre-computing prompt embeddings (frozen)...")
+    p_embeds = models.predict(embedder, p_train)
+    print("done, shape:", p_embeds.shape)
+
+    models.train_evaluator_contrastive(
+        evaluator, p_embeds, p_train, a_train, m_train,
+        epochs=30, batch_size=4, temperature=0.1,
+    )
+
+    print("\nposttraining aligned similarity (higher = better)")
+    post_align = models.eval(embedder, evaluator, p_test, a_test)
+    print("mean:", post_align.mean())
+    print("posttraining misaligned similarity")
+    post_misalign = models.eval(embedder, evaluator, p_test, m_test)
+    print("mean:", post_misalign.mean())
+
+    print("\nposttraining evaluator embedding variance (test set)")
+    post_var = models.get_variances(evaluator, a_test)
+    print("mean pairwise distance:", post_var.mean())
+
+    print("\naligned vs misaligned separation:")
+    print("  aligned   - mean sim:", post_align.mean(), "std:", post_align.std())
+    print("  misaligned - mean sim:", post_misalign.mean(), "std:", post_misalign.std())
 
 if __name__ == "__main__":
     main()

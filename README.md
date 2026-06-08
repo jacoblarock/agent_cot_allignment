@@ -21,22 +21,30 @@ possibility of a faster, even real-time assessment of agent chains of thought.
 
 # Methods
 
-## Dataset generation
+## Dataset
 
-Due to a lack of alignment-based datasets focusing on agentic tasks, this repository implements
-functions to generate a dataset of prompts, aligned and misaligned chains of thought based on
-generated industry role-descriptions. The dataset generation is performed with the model
-gpt-oss:20b
+Pre-generated prompt, aligned, and misaligned chain-of-thought pairs are loaded from JSON files
+under `data/`. Each example consists of a prompt, an aligned response, and a misaligned response.
 
-## Embedding and Evaluation models
+## Embedder and Evaluator
 
-Embeddings of the prompts are performed with a pretrained DistilBERT preprocessor and backbone.
-A second DistilBERT-based model is then created and trained to minimize the L2 distance between
-the aligned chain of thought and the embedding of the prompt itself, the hypothesis being that
-aligned examples will exhibit a lower distance to the query embeddings than misaligned examples.
+Two separate DistilBERT-based models are created from `keras_hub` presets. Both use masked mean
+pooling over the token sequence and L2-normalize the output embedding. The embedder is frozen and
+used to precompute prompt embeddings. The evaluator is the trainable component.
 
-Training is performed on 80% of the dataset and evaluation on the remaining 20%, with evaluation
-consisting of a L2 distance comparison between the aligned and misaligned samples. Given aligned
-embeddings that are consistently closer than misaligned embeddings, a hypersphere can be defined
-in the embedding space such that it is centered around the prompt embedding and reliable
-encompasses the aligned samples while excliding the misaligned samples.
+## Contrastive training
+
+The evaluator is trained with a contrastive (InfoNCE-style) loss. For each batch, prompt, aligned,
+and misaligned texts are tokenized (using tail-truncation to preserve the end of the sequence) and
+fed through the evaluator. Cosine similarity between prompt and response embeddings is scaled by a
+temperature parameter, then passed through a softmax over the positive/negative pairs. The loss
+encourages aligned embeddings to be closer to their prompt than misaligned ones.
+
+Training uses 80% of the data, with the remaining 20% held out for evaluation.
+
+## Evaluation
+
+Aligned and misaligned similarity is measured as the cosine similarity between the embedder's prompt
+embedding and the evaluator's response embedding — higher values indicate better alignment.
+Pairwise variance of evaluator embeddings is also computed to track embedding dispersion before and
+after training.
