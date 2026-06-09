@@ -101,32 +101,35 @@ def train_evaluator_contrastive(
     e_preprocessor, e_model = evaluator
     optimizer = keras.optimizers.Adam(learning_rate=2e-5)
 
+    @tf.function
+    def train_step(a_tokens, m_tokens, p_embeds_t):
+        with tf.GradientTape() as tape:
+            a_embeds = e_model(a_tokens)
+            m_embeds = e_model(m_tokens)
+
+            pos_sim = tf.reduce_sum(p_embeds_t * a_embeds, axis=-1) / temperature
+            neg_sim = tf.reduce_sum(p_embeds_t * m_embeds, axis=-1) / temperature
+
+            pos_exp = tf.exp(pos_sim)
+            neg_exp = tf.exp(neg_sim)
+
+            loss = -tf.reduce_mean(tf.math.log(pos_exp / (pos_exp + neg_exp)))
+
+        grads = tape.gradient(loss, e_model.trainable_weights)
+        optimizer.apply_gradients(zip(grads, e_model.trainable_weights))
+        return loss
+
     for epoch in range(epochs):
         total_loss = 0.0
         n_batches = 0
         for batch_p, batch_a, batch_m, batch_p_emb in make_batches(
             p_train, a_train, m_train, p_embeds, batch_size,
         ):
-            p_tokens = e_preprocessor(batch_p)
             a_tokens = e_preprocessor(batch_a)
             m_tokens = e_preprocessor(batch_m)
+            p_embeds_t = tf.constant(batch_p_emb, dtype=tf.float32)
 
-            with tf.GradientTape() as tape:
-                a_embeds = e_model({"token_ids": a_tokens["token_ids"], "padding_mask": a_tokens["padding_mask"]})
-                m_embeds = e_model({"token_ids": m_tokens["token_ids"], "padding_mask": m_tokens["padding_mask"]})
-
-                p_embeds_t = tf.constant(batch_p_emb, dtype=tf.float32)
-
-                pos_sim = tf.reduce_sum(p_embeds_t * a_embeds, axis=-1) / temperature
-                neg_sim = tf.reduce_sum(p_embeds_t * m_embeds, axis=-1) / temperature
-
-                pos_exp = tf.exp(pos_sim)
-                neg_exp = tf.exp(neg_sim)
-
-                loss = -tf.reduce_mean(tf.math.log(pos_exp / (pos_exp + neg_exp)))
-
-            grads = tape.gradient(loss, e_model.trainable_weights)
-            optimizer.apply_gradients(zip(grads, e_model.trainable_weights))
+            loss = train_step(a_tokens, m_tokens, p_embeds_t)
 
             total_loss += float(loss)
             n_batches += 1

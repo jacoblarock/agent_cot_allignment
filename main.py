@@ -1,7 +1,11 @@
 import models
 import json
+import tensorflow as tf
 
 def main():
+    physical_devices = tf.config.list_physical_devices('GPU')
+    if physical_devices:
+        tf.config.experimental.set_memory_growth(physical_devices[0], True)
     train_split = 0.8
     with open("data/prompts.json") as file:
         prompts = json.load(file)
