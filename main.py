@@ -1,5 +1,8 @@
 import models
 import json
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
 import tensorflow as tf
 
 def main():
@@ -48,7 +51,7 @@ def main():
 
     models.train_evaluator_contrastive(
         evaluator, p_embeds, p_train, a_train, m_train,
-        epochs=30, batch_size=4, temperature=0.1,
+        epochs=10, batch_size=4, temperature=0.1,
     )
 
     print("\nposttraining aligned similarity (higher = better)")
@@ -63,8 +66,24 @@ def main():
     print("mean pairwise distance:", post_var.mean())
 
     print("\naligned vs misaligned separation:")
-    print("  aligned   - mean sim:", post_align.mean(), "std:", post_align.std())
-    print("  misaligned - mean sim:", post_misalign.mean(), "std:", post_misalign.std())
+    print("aligned   - mean sim:", post_align.mean(), "std:", post_align.std())
+    print("misaligned - mean sim:", post_misalign.mean(), "std:", post_misalign.std())
+
+    plt.figure()
+    plt.hist(post_align, bins=20, alpha=0.6, label="aligned")
+    plt.hist(post_misalign, bins=20, alpha=0.6, label="misaligned")
+    plt.xlabel("cosine similarity")
+    plt.ylabel("frequency")
+    plt.legend()
+    plt.savefig("data/post_alignment_histogram.png", dpi=150, bbox_inches="tight")
+    plt.close()
+
+    plt.figure()
+    plt.hist(post_align - post_misalign, bins=30)
+    plt.xlabel("aligned sim - misaligned sim")
+    plt.ylabel("frequency")
+    plt.savefig("data/post_separation_histogram.png", dpi=150, bbox_inches="tight")
+    plt.close()
 
 if __name__ == "__main__":
     main()
