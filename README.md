@@ -2,22 +2,28 @@
 
 This repository contains an experimental setup for training and evaluating transformer-based
 embedding-models designed to assess the alignment of LLM chains of thought with a given prompt.
+Note: This is a toy project and should not be confused for scientifically sound/reviewed research.
+Inspiration came from the world of graph classifiers/GNNs, which use mappings of embeddings to
+distnguish normal/anomalous graph or node samples.
 
 # Background
 
 These experiments were inspired by certain limitations of LLM-based alignment evaluation as well
 as a lack of embedding-based alignment checks specifically for agentic tasks.
 
+## Real-time evaluation and decreased costs
+
+Because embedding-models are relatively small in comparision to many LLMs, they offer the
+possibility of a faster, even real-time assessment of agent chains of thought. This also allows
+for decreased costs in comparison to LLM as a Judge methods due to the relatively small size of
+the model.
+
 ## Prompt injection is an unsolved problem
 
 A risk of methods such as LLM-as-a-judge for alignment assessment is that LLMs are inately
 vulnerable to receiving instructions from their context or the prompt that may not be aligned with
-the task of risk assessment. This could lead to potential poisoning of alignment-assessors.
-
-## Real-time evaluation
-
-Because embedding-models are relatively small in comparision to many LLMs, they offer the
-possibility of a faster, even real-time assessment of agent chains of thought.
+the task of risk assessment. This could lead to potential poisoning of alignment-assessors, for
+example due to inserted instructions from an agent that is aware of the judge.
 
 # Methods
 

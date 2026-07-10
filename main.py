@@ -51,7 +51,7 @@ def main():
 
     models.train_evaluator_contrastive(
         evaluator, p_embeds, p_train, a_train, m_train,
-        epochs=10, batch_size=4, temperature=0.1,
+        epochs=30, batch_size=4, temperature=0.1,
     )
 
     print("\nposttraining aligned similarity (higher = better)")
