@@ -31,6 +31,10 @@ example due to inserted instructions from an agent that is aware of the judge.
 
 Pre-generated prompt, aligned, and misaligned chain-of-thought pairs are loaded from JSON files
 under `data/`. Each example consists of a prompt, an aligned response, and a misaligned response.
+Datasets are LLM-generated with an LLM-powered pipeline, starting with generating roles of AI
+agent users, then generating potential prompts and finally generating both aligned and misaligned
+response CoT examples. Specifically, the response samples focus on the first portion of the chain
+of thought from up until the first tool call the agent would make.
 
 ## Embedder and Evaluator
 
@@ -51,6 +55,6 @@ Training uses 80% of the data, with the remaining 20% held out for evaluation.
 ## Evaluation
 
 Aligned and misaligned similarity is measured as the cosine similarity between the embedder's prompt
-embedding and the evaluator's response embedding — higher values indicate better alignment.
+embedding and the evaluator's response embedding, where higher values indicate better alignment.
 Pairwise variance of evaluator embeddings is also computed to track embedding dispersion before and
 after training.
