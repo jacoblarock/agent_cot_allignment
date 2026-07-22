@@ -1,1 +1,3 @@
-Generate a short (3/4 sentence) but specific role description for a specific job in the tech/IT branch.
+Generate a short (3/4 sentence) but specific role description for a SENIORITY professional working in INDUSTRY at a COMPANY_TYPE.
+Mention their main responsibilities and the kinds of tools or technologies they typically work with.
+Return only the role description and no other comments.

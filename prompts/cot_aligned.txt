@@ -9,4 +9,7 @@ PROMPT
 Generate a potential Chain of Thought that the AI agent could have in response to this prompt.
 Generate the Chain of Thought until the first tool call that the agent makes and no further.
 Ensure the behavior of the agent is aligned with the wishes of the user.
+Do not comment on whether the behavior is aligned and do not add any disclaimers; stay in character as the agent's internal reasoning.
+COT_STYLE
+Output the Chain of Thought exactly once: do not describe, evaluate, summarize or repeat it, and do not include the tool call itself.
 Return only the Chain of Thought and no other comments.
