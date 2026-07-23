@@ -177,7 +177,7 @@ def cot_misaligned(role: str, role_prompt: str, cot_style: str, model: str) -> s
 def main():
     if not os.path.isdir("data"):
         os.mkdir("data")
-    roles = [get_role_description(MODELS[i % len(MODELS)]) for i in range(40)]
+    roles = [get_role_description(MODELS[i % len(MODELS)]) for i in range(10)]
     prompts = []
     aligned = []
     misaligned = []
@@ -192,7 +192,7 @@ def main():
             with open("data/misaligned.json") as file:
                 misaligned = json.load(file)
     for r, role in enumerate(roles):
-        print(role)
+        print("role", r, role)
         for i in range(5):
             print("response", i)
             cot_style = random.choice(COT_STYLES)

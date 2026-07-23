@@ -1,5 +1,6 @@
 import models
 import json
+import numpy as np
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -69,9 +70,30 @@ def main():
     print("aligned   - mean sim:", post_align.mean(), "std:", post_align.std())
     print("misaligned - mean sim:", post_misalign.mean(), "std:", post_misalign.std())
 
+    print("\ndetermining best classification threshold (train set)")
+    threshold = models.find_best_threshold(
+        embedder, evaluator,
+        p_train + p_train, a_train + m_train,
+        np.array([1] * len(a_train) + [0] * len(m_train)),
+    )
+    print("best threshold:", threshold)
+
+    print("\nclassification metrics (test set)")
+    metrics = models.classification_metrics(
+        embedder, evaluator,
+        p_test + p_test, a_test + m_test,
+        np.array([1] * len(a_test) + [0] * len(m_test)),
+        threshold,
+    )
+    print(json.dumps(metrics, indent=2))
+    with open("data/classification_metrics.json", "w") as file:
+        json.dump(metrics, file, indent=2)
+
     plt.figure()
     plt.hist(post_align, bins=20, alpha=0.6, label="aligned")
     plt.hist(post_misalign, bins=20, alpha=0.6, label="misaligned")
+    plt.axvline(threshold, color="red", linestyle="--", label=f"threshold = {threshold:.3f}")
+    plt.title(f"test accuracy: {metrics['accuracy']:.3f}")
     plt.xlabel("cosine similarity")
     plt.ylabel("frequency")
     plt.legend()

@@ -152,3 +152,52 @@ def get_variances(
 ) -> np.ndarray:
     x_embed = predict(model, x)
     return cdist(x_embed, x_embed, metric="euclidean")
+
+def find_best_threshold(
+    embedder: tuple[Callable,keras.Model],
+    evaluator: tuple[Callable,keras.Model],
+    x: list[str],
+    y: list[str],
+    labels: np.ndarray,
+) -> float:
+    scores = eval(embedder, evaluator, x, y)
+    labels = np.asarray(labels)
+    unique_scores = np.unique(scores)
+    if len(unique_scores) == 1:
+        return float(unique_scores[0])
+    candidates = (unique_scores[:-1] + unique_scores[1:]) / 2
+    best_threshold = candidates[0]
+    best_accuracy = -1.0
+    for t in candidates:
+        accuracy = ((scores >= t).astype(int) == labels).mean()
+        if accuracy > best_accuracy:
+            best_accuracy = accuracy
+            best_threshold = t
+    return float(best_threshold)
+
+def classification_metrics(
+    embedder: tuple[Callable,keras.Model],
+    evaluator: tuple[Callable,keras.Model],
+    x: list[str],
+    y: list[str],
+    labels: np.ndarray,
+    threshold: float,
+) -> dict:
+    scores = eval(embedder, evaluator, x, y)
+    labels = np.asarray(labels)
+    preds = (scores >= threshold).astype(int)
+    tp = int(np.sum((preds == 1) & (labels == 1)))
+    fp = int(np.sum((preds == 1) & (labels == 0)))
+    tn = int(np.sum((preds == 0) & (labels == 0)))
+    fn = int(np.sum((preds == 0) & (labels == 1)))
+    total = tp + fp + tn + fn
+    return {
+        "threshold": float(threshold),
+        "accuracy": (tp + tn) / total if total > 0 else 0.0,
+        "precision": tp / (tp + fp) if (tp + fp) > 0 else 0.0,
+        "recall": tp / (tp + fn) if (tp + fn) > 0 else 0.0,
+        "true_positives": tp,
+        "false_positives": fp,
+        "true_negatives": tn,
+        "false_negatives": fn,
+    }
