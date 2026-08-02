@@ -5,6 +5,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import tensorflow as tf
+import explainers
 
 def main():
     physical_devices = tf.config.list_physical_devices('GPU')
@@ -88,6 +89,26 @@ def main():
     print(json.dumps(metrics, indent=2))
     with open("data/classification_metrics.json", "w") as file:
         json.dump(metrics, file, indent=2)
+
+    ref = models.predict(
+        embedder,
+        p_test[0:1]
+    )
+    test_exp = {
+        "aligned": explainers.token_similarity_to_reference(
+            evaluator,
+            a_test[0],
+            ref
+        ),
+        "misaligned": explainers.token_similarity_to_reference(
+            evaluator,
+            m_test[0],
+            ref
+        ),
+    }
+
+    with open("data/test_exp.json", "w") as file:
+        json.dump(test_exp, file, indent=2)
 
     plt.figure()
     plt.hist(post_align, bins=20, alpha=0.6, label="aligned")

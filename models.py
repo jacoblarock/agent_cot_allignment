@@ -13,6 +13,7 @@ losses_map = {
 }
 
 def tail_preprocessor(preprocessor: keras_hub.models.DistilBertPreprocessor, sequence_length: int, x: list[str]) -> dict[str,tf.Tensor]:
+    assert isinstance(preprocessor.tokenizer, Callable)
     tokens = tf.ragged.constant(preprocessor.tokenizer(x))
     tokens = tokens[:, -(sequence_length-2):]
     batch_size = tf.shape(tokens)[0]
@@ -57,7 +58,7 @@ def create_model(sequence_length: int, loss: str) -> tuple[Callable, keras.Model
 def predict(
     model: tuple[Callable,keras.Model],
     x: list[str],
-) -> np.ndarray:
+) -> tf.Tensor:
     p, m = model
     return m.predict(p(x), batch_size=32)
 
@@ -75,7 +76,7 @@ def fit(
 
 def make_batches(
     p_train: list[str], a_train: list[str], m_train: list[str],
-    p_embeds: np.ndarray, batch_size: int,
+    p_embeds: tf.Tensor, batch_size: int,
 ):
     n = len(p_train)
     indices = np.random.permutation(n)
@@ -90,7 +91,7 @@ def make_batches(
 
 def train_evaluator_contrastive(
     evaluator: tuple[Callable, keras.Model],
-    p_embeds: np.ndarray,
+    p_embeds: tf.Tensor,
     p_train: list[str],
     a_train: list[str],
     m_train: list[str],
