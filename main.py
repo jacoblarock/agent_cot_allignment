@@ -87,7 +87,7 @@ def main():
         threshold,
     )
     print(json.dumps(metrics, indent=2))
-    with open("data/classification_metrics.json", "w") as file:
+    with open("results/classification_metrics.json", "w") as file:
         json.dump(metrics, file, indent=2)
 
     ref = models.predict(
@@ -107,7 +107,7 @@ def main():
         ),
     }
 
-    with open("data/test_exp.json", "w") as file:
+    with open("results/test_exp.json", "w") as file:
         json.dump(test_exp, file, indent=2)
 
     plt.figure()
@@ -118,14 +118,14 @@ def main():
     plt.xlabel("cosine similarity")
     plt.ylabel("frequency")
     plt.legend()
-    plt.savefig("data/post_alignment_histogram.png", dpi=150, bbox_inches="tight")
+    plt.savefig("results/post_alignment_histogram.png", dpi=150, bbox_inches="tight")
     plt.close()
 
     plt.figure()
     plt.hist(post_align - post_misalign, bins=30)
     plt.xlabel("aligned sim - misaligned sim")
     plt.ylabel("frequency")
-    plt.savefig("data/post_separation_histogram.png", dpi=150, bbox_inches="tight")
+    plt.savefig("results/post_separation_histogram.png", dpi=150, bbox_inches="tight")
     plt.close()
 
 if __name__ == "__main__":
