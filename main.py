@@ -1,11 +1,20 @@
+import os
 import models
 import json
+import logging
 import numpy as np
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import tensorflow as tf
 import explainers
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
+log = logging.getLogger(__name__)
 
 def main():
     physical_devices = tf.config.list_physical_devices('GPU')
@@ -18,9 +27,9 @@ def main():
         aligned = json.load(file)
     with open("data/misaligned.json") as file:
         misaligned = json.load(file)
-    print("prompts", len(prompts))
-    print("aligned", len(aligned))
-    print("misaligned", len(misaligned))
+    log.info(f"prompts {len(prompts)}")
+    log.info(f"aligned {len(aligned)}")
+    log.info(f"misaligned {len(misaligned)}")
     if len(prompts) != len(aligned) or len(aligned) != len(misaligned):
         raise RuntimeError("Lengths do not match!")
     split_index = int(len(prompts) * train_split)
@@ -30,99 +39,91 @@ def main():
     m_train = misaligned[:split_index]
     a_test = aligned[split_index:]
     m_test = misaligned[split_index:]
-    print("train", len(a_train))
-    print("test", len(a_test))
+    log.info(f"train {len(a_train)}")
+    log.info(f"test {len(a_test)}")
 
     embedder = models.create_model(sequence_length=128, loss="cosine_similarity")
     evaluator = models.create_model(sequence_length=128, loss="cosine_similarity")
 
-    print("pretraining aligned similarity")
+    log.info("pretraining aligned similarity")
     pre_align = models.eval(embedder, evaluator, p_test, a_test)
-    print("mean:", pre_align.mean())
-    print("pretraining misaligned similarity")
+    log.info(f"mean: {pre_align.mean()}")
+    log.info("pretraining misaligned similarity")
     pre_misalign = models.eval(embedder, evaluator, p_test, m_test)
-    print("mean:", pre_misalign.mean())
+    log.info(f"mean: {pre_misalign.mean()}")
 
-    print("\npretraining evaluator embedding variance (test set)")
+    log.info("pretraining evaluator embedding variance (test set)")
     pre_var = models.get_variances(evaluator, a_test)
-    print("mean pairwise distance:", pre_var.mean())
+    log.info(f"mean pairwise distance: {pre_var.mean()}")
 
-    print("\npre-computing prompt embeddings (frozen)...")
+    log.info("pre-computing prompt embeddings (frozen)...")
     p_embeds = models.predict(embedder, p_train)
-    print("done, shape:", p_embeds.shape)
+    log.info(f"done, shape: {p_embeds.shape}")
 
     models.train_evaluator_contrastive(
         evaluator, p_embeds, p_train, a_train, m_train,
         epochs=30, batch_size=4, temperature=0.1,
     )
 
-    print("\nposttraining aligned similarity (higher = better)")
+    log.info("posttraining aligned similarity (higher = better)")
     post_align = models.eval(embedder, evaluator, p_test, a_test)
-    print("mean:", post_align.mean())
-    print("posttraining misaligned similarity")
+    log.info(f"mean: {post_align.mean()}")
+    log.info("posttraining misaligned similarity")
     post_misalign = models.eval(embedder, evaluator, p_test, m_test)
-    print("mean:", post_misalign.mean())
+    log.info(f"mean: {post_misalign.mean()}")
 
-    print("\nposttraining evaluator embedding variance (test set)")
+    log.info("posttraining evaluator embedding variance (test set)")
     post_var = models.get_variances(evaluator, a_test)
-    print("mean pairwise distance:", post_var.mean())
+    log.info(f"mean pairwise distance: {post_var.mean()}")
 
-    print("\naligned vs misaligned separation:")
-    print("aligned   - mean sim:", post_align.mean(), "std:", post_align.std())
-    print("misaligned - mean sim:", post_misalign.mean(), "std:", post_misalign.std())
+    log.info("aligned vs misaligned separation:")
+    log.info(f"aligned   - mean sim: {post_align.mean()} std: {post_align.std()}")
+    log.info(f"misaligned - mean sim: {post_misalign.mean()} std: {post_misalign.std()}")
 
-    print("\ndetermining best classification threshold (train set)")
+    log.info("determining best classification threshold (train set)")
     threshold = models.find_best_threshold(
         embedder, evaluator,
         p_train + p_train, a_train + m_train,
         np.array([1] * len(a_train) + [0] * len(m_train)),
     )
-    print("best threshold:", threshold)
+    log.info(f"best threshold: {threshold}")
 
-    print("\nclassification metrics (test set)")
+    log.info("classification metrics (test set)")
     metrics = models.classification_metrics(
         embedder, evaluator,
         p_test + p_test, a_test + m_test,
         np.array([1] * len(a_test) + [0] * len(m_test)),
         threshold,
     )
-    print(json.dumps(metrics, indent=2))
+    log.info(json.dumps(metrics, indent=2))
     with open("results/classification_metrics.json", "w") as file:
         json.dump(metrics, file, indent=2)
 
-    ref = models.predict(
-        embedder,
-        p_test[0:1]
-    )
-    test_exp = {
-        "aligned": explainers.token_similarity_to_reference(
-            evaluator,
-            a_test[0],
-            ref
-        ),
-        "misaligned": explainers.token_similarity_to_reference(
-            evaluator,
-            m_test[0],
-            ref
-        ),
-    }
-
-    with open("results/test_exp.json", "w") as file:
-        json.dump(test_exp, file, indent=2)
-
-    aligned_html = explainers.similarity_to_html(
-        test_exp["aligned"],
-        title=f"aligned token similarity (prompt: {p_test[0][:60]!r})",
-    )
-    with open("results/test_exp_aligned.html", "w") as file:
-        file.write(aligned_html)
-
-    misaligned_html = explainers.similarity_to_html(
-        test_exp["misaligned"],
-        title=f"misaligned token similarity (prompt: {p_test[0][:60]!r})",
-    )
-    with open("results/test_exp_misaligned.html", "w") as file:
-        file.write(misaligned_html)
+    log.info("generating per-sample explanations")
+    for kind, responses, overall_sims in (
+        ("aligned", a_test, post_align),
+        ("misaligned", m_test, post_misalign),
+    ):
+        raw_dir = os.path.join("results", "explanations", kind, "raw")
+        html_dir = os.path.join("results", "explanations", kind, "html")
+        os.makedirs(raw_dir, exist_ok=True)
+        os.makedirs(html_dir, exist_ok=True)
+        for i, response in enumerate(responses):
+            ref = models.predict(embedder, p_test[i:i + 1])
+            token_sims = explainers.token_similarity_to_reference(
+                evaluator, response, ref
+            )
+            with open(os.path.join(raw_dir, f"{i}.json"), "w") as file:
+                json.dump(token_sims, file, indent=2)
+            html = explainers.similarity_to_html(
+                token_sims,
+                title=f"{kind} #{i} (prompt: {p_test[i]!r})",
+                overall_sim=float(overall_sims[i]),
+                threshold=float(threshold),
+            )
+            with open(os.path.join(html_dir, f"{i}.html"), "w") as file:
+                file.write(html)
+    log.info("explanations written under results/explanations/")
 
     plt.figure()
     plt.hist(post_align, bins=20, alpha=0.6, label="aligned")

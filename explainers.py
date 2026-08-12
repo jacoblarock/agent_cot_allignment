@@ -61,6 +61,8 @@ def similarity_to_html(
     title: str = "token similarity",
     min_sim: float = -1.0,
     max_sim: float = 1.0,
+    overall_sim: float | None = None,
+    threshold: float | None = None,
 ) -> str:
     if max_sim <= min_sim:
         raise ValueError("max_sim must be greater than min_sim")
@@ -88,6 +90,16 @@ def similarity_to_html(
         )
 
     body = " ".join(rows)
+    meta_parts = []
+    if overall_sim is not None:
+        meta_parts.append(f"cosine similarity: {float(overall_sim):.4f}")
+    if threshold is not None:
+        label = "aligned" if float(overall_sim) >= float(threshold) else "misaligned"
+        meta_parts.append(
+            f"threshold: {float(threshold):.4f} "
+            f'(classified: <span style="font-weight:bold;">{label}</span>)'
+        )
+    meta_line = "<br>".join(meta_parts)
     return (
         "<!DOCTYPE html>\n"
         "<html lang=\"en\">\n"
@@ -97,10 +109,12 @@ def similarity_to_html(
         "<style>\n"
         "body{font-family:monospace;font-size:16px;line-height:1.6;}\n"
         "h1{font-size:18px;}\n"
+        ".meta{margin:8px 0 16px;padding:8px;background:#f0f0f0;border-radius:4px;}\n"
         "</style>\n"
         "</head>\n"
         "<body>\n"
         f"<h1>{escaped_title}</h1>\n"
+        f'<div class="meta">{meta_line}</div>\n'
         f"<p>{body}</p>\n"
         "</body>\n"
         "</html>\n"
