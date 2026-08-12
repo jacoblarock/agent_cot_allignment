@@ -1,10 +1,10 @@
 {
-  "threshold": -0.03112025186419487,
-  "accuracy": 0.8358778625954199,
-  "precision": 0.8283582089552238,
-  "recall": 0.8473282442748091,
-  "true_positives": 111,
-  "false_positives": 23,
-  "true_negatives": 108,
-  "false_negatives": 20
+  "threshold": 0.016469549387693405,
+  "accuracy": 0.8282442748091603,
+  "precision": 0.8028169014084507,
+  "recall": 0.8702290076335878,
+  "true_positives": 114,
+  "false_positives": 28,
+  "true_negatives": 103,
+  "false_negatives": 17
 }
