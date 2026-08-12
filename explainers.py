@@ -54,3 +54,54 @@ def token_similarity_to_reference(
         {"token": str(t), "sim": float(s)}
         for t, s in zip(token_strings, sims)
     ]
+
+
+def similarity_to_html(
+    token_sims: list[dict],
+    title: str = "token similarity",
+    min_sim: float = -1.0,
+    max_sim: float = 1.0,
+) -> str:
+    if max_sim <= min_sim:
+        raise ValueError("max_sim must be greater than min_sim")
+
+    def _color(sim: float) -> str:
+        t = (sim - min_sim) / (max_sim - min_sim)
+        t = max(0.0, min(1.0, t))
+        red = int(round((1.0 - t) * 255))
+        green = int(round(t * 255))
+        return f"rgb({red},{green},0)"
+
+    escaped_title = (title or "").replace("<", "&lt;").replace(">", "&gt;")
+    rows = []
+    for entry in token_sims:
+        token = str(entry["token"])
+        sim = float(entry["sim"])
+        token_html = token.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+        token_html = token_html.replace("\n", "<br>")
+        color = _color(sim)
+        rows.append(
+            f'<span title="{sim:.4f}" '
+            f'style="background-color:{color};color:#000;'
+            f'padding:1px 2px;border-radius:3px;'
+            f'white-space:pre-wrap;">{token_html}</span>'
+        )
+
+    body = " ".join(rows)
+    return (
+        "<!DOCTYPE html>\n"
+        "<html lang=\"en\">\n"
+        "<head>\n"
+        '<meta charset="utf-8">\n'
+        f"<title>{escaped_title}</title>\n"
+        "<style>\n"
+        "body{font-family:monospace;font-size:16px;line-height:1.6;}\n"
+        "h1{font-size:18px;}\n"
+        "</style>\n"
+        "</head>\n"
+        "<body>\n"
+        f"<h1>{escaped_title}</h1>\n"
+        f"<p>{body}</p>\n"
+        "</body>\n"
+        "</html>\n"
+    )

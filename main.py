@@ -110,6 +110,20 @@ def main():
     with open("results/test_exp.json", "w") as file:
         json.dump(test_exp, file, indent=2)
 
+    aligned_html = explainers.similarity_to_html(
+        test_exp["aligned"],
+        title=f"aligned token similarity (prompt: {p_test[0][:60]!r})",
+    )
+    with open("results/test_exp_aligned.html", "w") as file:
+        file.write(aligned_html)
+
+    misaligned_html = explainers.similarity_to_html(
+        test_exp["misaligned"],
+        title=f"misaligned token similarity (prompt: {p_test[0][:60]!r})",
+    )
+    with open("results/test_exp_misaligned.html", "w") as file:
+        file.write(misaligned_html)
+
     plt.figure()
     plt.hist(post_align, bins=20, alpha=0.6, label="aligned")
     plt.hist(post_misalign, bins=20, alpha=0.6, label="misaligned")
